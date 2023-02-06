@@ -1,6 +1,6 @@
-from sqlalchemy import Column, BIGINT, select
+from sqlalchemy import Column, BIGINT, select, create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 class Base(DeclarativeBase):
@@ -8,7 +8,9 @@ class Base(DeclarativeBase):
     id = Column(BIGINT, primary_key=True)
 
     engine = create_async_engine('postgresql+asyncpg://belhard:belhard@localhost:5432/ivibot')
+    sync_engine = create_engine('postgresql://belhard:belhard@localhost:5432/ivibot')
     AsyncSession_ = async_sessionmaker(bind=engine)
+    Session_ = sessionmaker(bind=sync_engine)
 
     @staticmethod
     def create_session(func):
@@ -59,3 +61,9 @@ class Base(DeclarativeBase):
         if '_sa_instance_state' in data:
             del data['_sa_instance_state']
         return data
+
+    @classmethod
+    @create_session
+    async def scalars(cls, sql, session: AsyncSession):
+        query = await session.scalars(sql)
+        return query.all()
